@@ -1,0 +1,100 @@
+#!/bin/sh
+# ------------------------------------------------------------------------
+# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=75   :
+# ------------------------------------------------------------------------
+# Copyright (c) 2013 Mathias J. Hennig                                   :
+#                                                                        :
+# All rights reserved.                                                   :
+#                                                                        :
+# Redistribution and use in source and binary forms, with or without     :
+# modification, are permitted provided that the following conditions     :
+# are met:                                                               :
+#                                                                        :
+# 1)  Redistributions of source code must retain the above copyright     :
+#     notice, this list of conditions and the following disclaimer.      :
+# 2)  Redistributions in binary form must reproduce the above copyright  :
+#     notice, this list of conditions and the following disclaimer in    :
+#     the documentation and/or other materials provided with the         :
+#     distribution.                                                      :
+#                                                                        :
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS     :
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT      :
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR  :
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT   :
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, :
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT       :
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,  :
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY  :
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT    :
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE  :
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.   :
+# ------------------------------------------------------------------------
+ARGV0="`basename ${SALTNODE_SETUP_ARGV0:-$0}`"
+
+# Import explicit setup variables, if any
+if [ -e "/etc/default/saltnode-setup" ]; then
+    . "/etc/default/saltnode-setup"
+fi
+
+# The default master hostname whitelist pattern
+: ${SALTNODE_SETUP_NAME_ALLOW:="[[:alnum:]\\-]\\+"}
+# The default master hostname blacklist pattern
+: ${SALTNODE_SETUP_NAME_DENY:=""}
+# The default prompt to ask for a new master hostname
+: ${SALTNODE_SETUP_PROMPT:="Please enter the name of the salt master: "}
+# The path to the salt-minion configuration file
+: ${SALTNODE_SETUP_CONFIG:="/etc/salt/minion"}
+
+# The hostname checks are performed at multiple positions in the script,
+# so we have an explicit function for that
+is_invalid_master_name() {
+    # Apply the black- and white-list patterns
+    echo "$1" \
+    |   grep -v "^$SALTNODE_SETUP_NAME_DENY\$" \
+    |   grep "^$SALTNODE_SETUP_NAME_ALLOW\$" >/dev/null
+    # Reverse the testresult (we're checking for INvalid names)
+    test $? -ne 0
+}
+
+# Obtain the master's hostname
+get_master_name() {
+    PATTERN='^\s*master\s*:\s*\([^ \t]\+\)\s*$'
+    sed -n "1,50 s/$PATTERN/\\1/p" "$SALTNODE_SETUP_CONFIG"
+}
+
+# Update the master's hostname
+set_master_name() {
+    PATTERN='^\s*#\?\s*master\s*:\s*\([^ \t]\+\)\s*$'
+    sed -i.`date +%Y%m%d%H%M%S` \
+        -e "1,50 s/$PATTERN/master: $1/" "$SALTNODE_SETUP_CONFIG"
+}
+
+# The main function invoked when called as "saltnode-master"
+saltnode_master() {
+    MASTER="`get_master_name`"
+    # Start the setup workflow only if necessary
+    if is_invalid_master_name "$MASTER"; then
+        # Prompt until a valid hostname is provided
+        while :; do
+            echo -n "$SALTNODE_SETUP_PROMPT"
+            read MASTER
+            is_invalid_master_name "$MASTER" || break
+            echo "The name must match: /$SALTNODE_SETUP_NAME_ALLOW/" >&2
+            echo "The name shall not match: /$SALTNODE_SETUP_NAME_DENY/" >&2
+        done
+        # Update the runtime configuration
+        set_master_name "$MASTER"
+    fi
+}
+
+# The default function invoked
+saltnode_setup() {
+    saltnode_master "$@"
+}
+
+# Determine how to behave and call the desired function
+case "$ARGV0" in
+    *) # default
+        saltnode_setup "$@" ;;
+esac
+

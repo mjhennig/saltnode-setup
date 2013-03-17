@@ -1,0 +1,20 @@
+#!/bin/sh
+# ------------------------------------------------------------------------
+# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=75   :
+# ------------------------------------------------------------------------
+# This file can be used to change the behavior of the saltnode-setup     :
+# script, e.g. it's black- and white-list patterns                       :
+# ------------------------------------------------------------------------
+
+# The default master hostname whitelist pattern
+: ${SALTNODE_SETUP_NAME_ALLOW:="[\.[:alnum:]\\-]\\+"}
+
+# The default master hostname blacklist pattern
+: ${SALTNODE_SETUP_NAME_DENY:=""}
+
+# The default prompt to ask for a new master hostname
+: ${SALTNODE_SETUP_PROMPT:="Please enter the name of the salt master: "}
+
+# The path to the salt-minion configuration file
+: ${SALTNODE_SETUP_CONFIG:="/etc/salt/minion"}
+
