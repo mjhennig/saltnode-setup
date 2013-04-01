@@ -3,7 +3,7 @@ Version:
 Section: admin
 Priority: optional
 Architecture: all
-Depends: coreutils salt-minion
+Depends: coreutils, salt-minion
 Maintainer:
 Description: Saltstack Master Setup At Boot Time
 
