@@ -4,8 +4,8 @@
 # Provides:             saltnode-setup
 # Required-Start:       mountall
 # Required-Stop:
-# Default-Start:        S
-# Default-Stop:
+# Default-Start:        2 3 4 5
+# Default-Stop:			0 1 6
 # Short-Description:    Finalize the salt minion configuration
 ### END INIT INFO
 ARGV0=`basename $0`
