@@ -30,8 +30,8 @@ build/saltnode-setup-%: .maintainer
 
 distclean: clean
 	rm -f .maintainer
-	rm -f *.deb
 
 clean:
 	rm -rf build
+	rm -f *.deb
 
