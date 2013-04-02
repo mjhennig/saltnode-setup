@@ -69,8 +69,15 @@ set_master_name() {
         -e "1,50 s/$PATTERN/master: $1/" "$SALTNODE_SETUP_CONFIG"
 }
 
-# The main function invoked when called as "saltnode-master"
-saltnode_master() {
+# Remove the minion's public and private key files, if any
+delete_minion_keys() {
+    rm -f \
+        /etc/salt/pki/minion/minion.pem \
+        /etc/salt/pki/minion/minion.pub
+}
+
+# The default function invoked
+saltnode_setup() {
     MASTER="`get_master_name`"
     # Start the setup workflow only if necessary
     if is_invalid_master_name "$MASTER"; then
@@ -84,12 +91,8 @@ saltnode_master() {
         done
         # Update the runtime configuration
         set_master_name "$MASTER"
+        delete_minion_keys
     fi
-}
-
-# The default function invoked
-saltnode_setup() {
-    saltnode_master "$@"
 }
 
 # Determine how to behave and call the desired function
